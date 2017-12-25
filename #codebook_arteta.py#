@@ -1,0 +1,19 @@
+import cv2
+import numpy as np
+import math
+
+
+
+class CODEBOOK:
+    
+    def __init__(self):
+        self.partition=[]
+        self.N=16
+    def compute_features(self):
+
+    def get_feat_dim_max(self):
+    
+    def compute_median(self):
+
+    def split_partition(self):
+    
