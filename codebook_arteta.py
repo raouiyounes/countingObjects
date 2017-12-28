@@ -16,17 +16,14 @@ class CODEBOOK:
     
     
     def create_partition(self,element_p):
-        self.partition.size=len(element_p.desco)
-        self.partition.data=element_p.desco
-        self.partition.pixel_whole=element_p.pixel
-        self.partition.index_of_all=element_p.im_idx
-    
         
-        return self.partition
+        p=Partition(element_p)
+           
+        return p
         
         
     def __init__(self,annot,elements):
-        self.N=2
+        self.N=6
         self.median=0
         self.annot_whole=annot
         self.descriptors=elements.desco
@@ -47,12 +44,14 @@ class CODEBOOK:
                 if self.annot_whole.idx_whole[j]==part.index_of_all[i] and self.annot_whole.pixel_whole[j][0]==part.pixel_whole[i].x and self.annot_whole.pixel_whole[j][1]==part.pixel_whole[i].y:
                     count+=1
         return count
-    def processing_for_partition(self):
-        for i in self.set_of_partitions:
-            self.median.append(self.get_feat_dim_max(self.set_of_partitions[i].data))
-        
-    def get_feat_dim_max(self,descriptors):
+    # you have to use the data of the partition not the whole data
+    def get_feat_dim_max(self,partition_i):
         #pdb.set_trace()
+        
+        descriptors=partition_i.data
+        pixel_w_part=partition_i.pixel_whole
+        index_of_part=partition_i.index_of_all
+    
         variance=[0]*len(descriptors)
         desc_std_i=[0]*len(descriptors)
         for i in range(len(descriptors[0])):
@@ -61,26 +60,25 @@ class CODEBOOK:
             desc_std_i[i]=np.std(temp)
         variance=max(desc_std_i)
         index_of_max_variance=desc_std_i.index(variance)
-        self.median=0
+        median=0
         for i in range(len(self.annot_whole.pixel_whole)):
             
             x_ann=self.annot_whole.pixel_whole[i][0]
             y_ann=self.annot_whole.pixel_whole[i][1]
             idx_ann=self.annot_whole.idx_whole[i]
             index_of_desc=0
-            while self.elements.pixel[index_of_desc].x != x_ann and self.elements.pixel[index_of_desc].y!=y_ann and self.elements.im_idx[index_of_desc]!=idx_ann:
+            while pixel_w_part[index_of_desc].x != x_ann and pixel_w_part[index_of_desc].y!=y_ann and index_of_part[index_of_desc]!=idx_ann:
                index_of_desc+=1     
-                    
             
-            self.median+=descriptors[index_of_desc][index_of_max_variance]
-        self.median/=len(self.annot_whole.pixel_whole)
-        return self.median/len(self.annot_whole.pixel_whole)
-
+            median+=descriptors[index_of_desc][index_of_max_variance]
+        median/=len(self.annot_whole.pixel_whole)
+        return median
 
     def process(self):
         count=0
         for i in range(len(self.set_of_partitions)):
             if self.count_nb_annotation_part(i)>self.N:
+                print "index of the annotated line in the db",i
                 count+=1
         if count!=0:
             return True
@@ -93,13 +91,14 @@ class CODEBOOK:
         proc=True
         while proc==True:
             for j in range(len(self.set_of_partitions)):
-                part=self.set_of_partitions[j]
                 
-                med=self.get_feat_dim_max(part.data)
+                if self.count_nb_annotation_part(j)>self.N:
+                    part=self.set_of_partitions[j]
+                    self.remove_partition(j)
                 
-                if self.count_nb_annotation_part(j)>0:
-                    part_i_1=[]
-                    part_i_2=[]
+                    med=self.get_feat_dim_max(part)
+                    print "la median est",med
+                    print "index of the annotated pixel",j
                     k_1=0
                     k_2=0
                     pixels_part_1=[]
@@ -111,7 +110,6 @@ class CODEBOOK:
                     index_part_2=[]
                     data_i_1_pile=[]
                     data_i_2_pile=[]
-                    print med
                     for i in range(len(part.data)):
                         if (part.data[i][self.index_of_max_variance]<med):
                             data_i_1_pile.append(part.data[i][:])
@@ -126,22 +124,28 @@ class CODEBOOK:
                             index_part_2.append(part.index_of_all[i])
                             k_2+=1
                     
-                    #data_i_1=[[0]*len(data_i_1_pile[0])]*len(data_i_1_pile)
-                    #data_i_2=[[0]*len(data_i_2_pile[0])]*len(data_i_2_pile)
+                     
                     
                     data_i_1=list(data_i_1_pile)
                     data_i_2=list(data_i_2_pile)
-                    e_i_1=Element(index_part_1,x_i_1,y_i_1,data_i_1)
-                    e_i_2=Element(index_part_2,x_i_2,y_i_2,data_i_2)
+                    p=[]
+                    if len(data_i_1)!=0:
+                        e=Element(index_part_1,x_i_1,y_i_1,data_i_1)
+                        p=self.create_partition(e)
+                        self.set_of_partitions.append(p)
+                        
+                        
+                        #self.set_of_partitions.append(p)
+                    p=[]
+                    if len(data_i_2)!=0:
+                        e=Element(index_part_2,x_i_2,y_i_2,data_i_2)
+                        p=self.create_partition(e)
+                        self.set_of_partitions.append(p)
                     
                     
-                    p1=self.create_partition(e_i_1)
-                    p2=self.create_partition(e_i_2)
-                    self.remove_partition(j)
-                    self.set_of_partitions.append(p1)
-                    self.set_of_partitions.append(p2)
-                    print "size of partition 0",self.set_of_partitions[0].size
-            proc=self.process()        
+            for i in range(len(self.set_of_partitions)):
+                print "size of partition",i," " ,len(self.set_of_partitions[i].data)
+            proc=self.process()
 # 400 is the threshold
 # data is i*j*index of the image
 
@@ -180,7 +184,7 @@ x=[]
 y=[]
 index=[]
 
-for i in range(3):
+for i in range(len(image_db)):
     img=cv2.resize(image_db[i],(256,256))
     height,width=img.shape[:2]
     for x_i in range(0,width):
