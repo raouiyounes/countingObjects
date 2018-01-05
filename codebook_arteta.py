@@ -23,7 +23,7 @@ class CODEBOOK:
         
         
     def __init__(self,annot,elements):
-        self.N=6
+        self.N=16
         self.median=0
         self.annot_whole=annot
         self.descriptors=elements.desco
@@ -66,11 +66,11 @@ class CODEBOOK:
             x_ann=self.annot_whole.pixel_whole[i][0]
             y_ann=self.annot_whole.pixel_whole[i][1]
             idx_ann=self.annot_whole.idx_whole[i]
-            index_of_desc=0
-            while pixel_w_part[index_of_desc].x != x_ann and pixel_w_part[index_of_desc].y!=y_ann and index_of_part[index_of_desc]!=idx_ann:
-               index_of_desc+=1     
-            
-            median+=descriptors[index_of_desc][index_of_max_variance]
+            chosen_index=0
+            for index_of_desc in range(len(pixel_w_part)):
+                if pixel_w_part[index_of_desc].x == x_ann and pixel_w_part[index_of_desc].y==y_ann and index_of_part[index_of_desc]==idx_ann:
+                    chosen_index=index_of_desc
+            median+=descriptors[chosen_index][index_of_max_variance]
         median/=len(self.annot_whole.pixel_whole)
         return median
 
@@ -78,7 +78,6 @@ class CODEBOOK:
         count=0
         for i in range(len(self.set_of_partitions)):
             if self.count_nb_annotation_part(i)>self.N:
-                print "index of the annotated line in the db",i
                 count+=1
         if count!=0:
             return True
@@ -97,8 +96,6 @@ class CODEBOOK:
                     self.remove_partition(j)
                 
                     med=self.get_feat_dim_max(part)
-                    print "la median est",med
-                    print "index of the annotated pixel",j
                     k_1=0
                     k_2=0
                     pixels_part_1=[]
@@ -142,12 +139,37 @@ class CODEBOOK:
                         p=self.create_partition(e)
                         self.set_of_partitions.append(p)
                     
-                    
+            s=0
             for i in range(len(self.set_of_partitions)):
-                print "size of partition",i," " ,len(self.set_of_partitions[i].data)
+                s+=len(self.set_of_partitions[i].data)
+            
+            print "size is : ",s
             proc=self.process()
+        print "fin du partitionnement"
 # 400 is the threshold
 # data is i*j*index of the image
+
+
+    def find_partition(self,desc_i):
+        print "longueur du desc",len(desc_i)
+        desco=[0]*len(desc_i)
+        for i in range(len(desc_i)):
+            desco[i]=desc_i[i]
+        print desc_i
+        partitions=self.set_of_partitions
+        difference_of_desc=[d1-d2 for d1,d2 in zip(partitions[0].data[0][:],desco)]
+        euclidean_distance_data=np.std(difference_of_desc)
+        min_index_partition=0
+        for i in range(1,len(partitions)):
+            for k in range(1,len(partitions[i].data)):
+                difference_of_desc=[d1-d2 for d1,d2 in zip(partitions[i].data[k][:],desco)]
+                if np.std(difference_of_desc)<euclidean_distance_data:
+                    euclidean_distance_data=np.std(difference_of_desc)
+                    min_index_partition=i
+        
+        print min_index_partition
+        return min_index_partition
+
 
 class Pixel:
     def __init__(self,x_pix,y_pix):
@@ -174,7 +196,7 @@ class Annot:
             self.idx_whole.append(idx[i])
             self.pixel_whole.append(pixels[i])
 
-image_db=np.load('gray_images.npy')
+image_db=np.load('gray_imagesBR.npy')
 feat_object=cv2.xfeatures2d.SURF_create(400)
 data=np.zeros([256,256,len(image_db)])
 
@@ -184,7 +206,7 @@ x=[]
 y=[]
 index=[]
 
-for i in range(len(image_db)):
+for i in range(3):
     img=cv2.resize(image_db[i],(256,256))
     height,width=img.shape[:2]
     for x_i in range(0,width):
@@ -199,7 +221,7 @@ for i in range(len(image_db)):
             
 el=Element(index,x,y,desc)
 
-anot_1=np.load('annotations256_globale.npy')
+anot_1=np.load('annotationGlobalBR.npy')
 
 index_of_annot=0
 pixels=[]
@@ -217,4 +239,19 @@ ann=Annot(index_i,pixels)
                 
     
 cbook=CODEBOOK(ann,el)
+
+
 cbook.split_partition()
+print "jjjjjjjjjjjjjjjj"
+    
+index_of_partition=[]
+for i in range(1):
+    img=cv2.resize(image_db[i],(256,256))
+    height,width=img.shape[:2]
+    for x_i in range(0,width):
+        for y_i in range(0,height):
+            pt=[cv2.KeyPoint(x_i,y_i,10)]
+            desc_i=feat_object.compute(img,pt)
+            index_of_partition.append(cbook.find_partition(desc_i[1][0]))
+print index_of_partition
+            
