@@ -234,7 +234,7 @@ class Annot:
         for i in range(len(idx)):
             self.idx_whole.append(idx[i])
             self.pixel_whole.append(pixels[i])
-"""
+
 image_db=np.load('gray_imagesBR.npy')
 feat_object=cv2.xfeatures2d.SURF_create(400)
 data=np.zeros([256,256,len(image_db)])
@@ -293,4 +293,4 @@ index_of_partition=[]
                 desc_i=feat_object.compute(img,pt)
                 index_of_partition.append(cbook.find_partition_3(desc_i[1][0]))
 print index_of_partition
-"""         
+         
