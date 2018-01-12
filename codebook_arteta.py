@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import math
 import pdb
-
+from scipy.spatial import distance
 
 class Partition:
     def __init__(self,elements_dd):
@@ -149,14 +149,37 @@ class CODEBOOK:
 # 400 is the threshold
 # data is i*j*index of the image
 
-
-    def find_partition(self,desc_i):
-        print "longueur du desc",len(desc_i)
+    def find_partition_3(self,desc_i):
+        #pdb.set_trace()
+        desco=[0]*len(desc_i)
+        
+        for i in range(len(desc_i)):
+            desco[i]=desc_i[i]
+        
+   
+      
+        partitions=self.set_of_partitions
+        part_i=self.set_of_partitions[0].data
+        dist_i=distance.cdist([desc_i],part_i,'cityblock')
+        min_i=min(np.transpose(dist_i))
+        index_i=0
+    
+        
+        for i in range(1,len(partitions)):
+            part_i=self.set_of_partitions[i].data
+            dist_i=distance.cdist([desc_i],part_i,'cityblock')
+            min_of_dist_desc_part=min(np.transpose(dist_i))
+            if min_i>min_of_dist_desc_part[0]:
+                index_i=i
+        #print "index in the dico",index_i
+        return index_i
+    def find_partition(self,desc_i,partitions):
+        #print "longueur du desc",len(desc_i)
         desco=[0]*len(desc_i)
         for i in range(len(desc_i)):
             desco[i]=desc_i[i]
-        print desc_i
-        partitions=self.set_of_partitions
+        #print desc_i
+        #partitions=self.set_of_partitions
         difference_of_desc=[d1-d2 for d1,d2 in zip(partitions[0].data[0][:],desco)]
         euclidean_distance_data=np.std(difference_of_desc)
         min_index_partition=0
@@ -167,6 +190,22 @@ class CODEBOOK:
                     euclidean_distance_data=np.std(difference_of_desc)
                     min_index_partition=i
         
+        print min_index_partition
+    def find_partition_2(self,desc_i):
+        print "jkjkjkjkj"
+        desco=[0]*len(desc_i)
+        for i in range(len(desc_i)):
+            desco[i]=desc_i[i]
+        partitions=self.set_of_partitions
+        difference_of_desc=[d1-d2 for d1,d2 in zip(partitions[0].data[0][:],desco)]
+        euclidean_distance_data=np.std(difference_of_desc)
+        min_index_partition=0
+        for i in range(1,len(partitions)):
+            for k in range(1,len(partitions[i].data)):
+                difference_of_desc=[d1-d2 for d1,d2 in zip(partitions[i].data[k][:],desco)]
+                if np.std(difference_of_desc)<euclidean_distance_data:
+                    euclidean_distance_data=np.std(difference_of_desc)
+                    min_index_partition=i
         print min_index_partition
         return min_index_partition
 
@@ -195,7 +234,7 @@ class Annot:
         for i in range(len(idx)):
             self.idx_whole.append(idx[i])
             self.pixel_whole.append(pixels[i])
-
+"""
 image_db=np.load('gray_imagesBR.npy')
 feat_object=cv2.xfeatures2d.SURF_create(400)
 data=np.zeros([256,256,len(image_db)])
@@ -237,21 +276,21 @@ for i in range(len(anot_1)):
         index_i.append(i)
 ann=Annot(index_i,pixels)
                 
-    
+
 cbook=CODEBOOK(ann,el)
 
 
 cbook.split_partition()
 print "jjjjjjjjjjjjjjjj"
-    
+        
 index_of_partition=[]
-for i in range(1):
-    img=cv2.resize(image_db[i],(256,256))
-    height,width=img.shape[:2]
-    for x_i in range(0,width):
-        for y_i in range(0,height):
-            pt=[cv2.KeyPoint(x_i,y_i,10)]
-            desc_i=feat_object.compute(img,pt)
-            index_of_partition.append(cbook.find_partition(desc_i[1][0]))
+    for i in range(1):
+        img=cv2.resize(image_db[i],(256,256))
+        height,width=img.shape[:2]
+        for x_i in range(0,width):
+            for y_i in range(0,height):
+                pt=[cv2.KeyPoint(x_i,y_i,10)]
+                desc_i=feat_object.compute(img,pt)
+                index_of_partition.append(cbook.find_partition_3(desc_i[1][0]))
 print index_of_partition
-            
+"""         
