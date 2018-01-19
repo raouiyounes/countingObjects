@@ -282,6 +282,9 @@ for i in range(3):
             
 el=Element(index,x,y,desc)
 
+
+# loading of the annotation file
+
 anot_1=np.load('annotationGlobalBR.npy')
 
 index_of_annot=0
@@ -298,14 +301,17 @@ for i in range(len(anot_1)):
         index_i.append(i)
 ann=Annot(index_i,pixels)
                 
+# constructs an object of CODEBOOK
 
 cbook=CODEBOOK(ann,el)
 
-
+# Create the partition as in Arteta et al 
 cbook.split_partition()
 
 X=np.zeros([(len(image_db)*256*256),len(cbook.set_of_partitions)])
     
+    
+# Compute the X matrix   
 index_of_partition=[]
 index_of_pixel=0
 for i in range(len(image_db)):
