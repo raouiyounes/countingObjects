@@ -3,6 +3,7 @@ import numpy as np
 import math
 import pdb
 from scipy.spatial import distance
+from matplotlib import cbook
 
 class Partition:
     def __init__(self,elements_dd):
@@ -11,7 +12,6 @@ class Partition:
         self.data=elements_dd.desco
         self.pixel_whole=elements_dd.pixel
         self.index_of_all=elements_dd.im_idx
-
 class CODEBOOK:
     
     
@@ -86,6 +86,12 @@ class CODEBOOK:
             
     def remove_partition(self,i):
         del self.set_of_partitions[i]
+        
+    def compute_mean_of_desc_parti(self):
+        for i in range(len(self.set_of_partitions)):
+            desc_of_part=cbook.set_of_partitions[i].data
+            self.set_of_partitions[i].mean_desc=np.mean(desc_of_part,axis=0)
+
     def split_partition(self):
         proc=True
         while proc==True:
@@ -148,7 +154,21 @@ class CODEBOOK:
         print "fin du partitionnement"
 # 400 is the threshold
 # data is i*j*index of the image
-
+    
+    def find_partition_4(self,desc_i):
+        distance_between_descriptors=[0]*len(self.set_of_partitions)
+        voted_dim=0
+        for i in range(len(self.set_of_partitions)):
+            distance_between_descriptors[i]=np.linalg.norm(desc_i- self.set_of_partitions[i].mean_desc)
+        min= distance_between_descriptors[0]
+        for j in range(len(distance_between_descriptors)):
+            if distance_between_descriptors[j]<min:
+                min=distance_between_descriptors[j]
+                voted_dim=j
+        return voted_dim
+        
+    
+    
     def find_partition_3(self,desc_i):
         #pdb.set_trace()
         desco=[0]*len(desc_i)
@@ -235,6 +255,8 @@ class Annot:
             self.idx_whole.append(idx[i])
             self.pixel_whole.append(pixels[i])
 
+
+
 image_db=np.load('gray_imagesBR.npy')
 feat_object=cv2.xfeatures2d.SURF_create(400)
 data=np.zeros([256,256,len(image_db)])
@@ -281,16 +303,23 @@ cbook=CODEBOOK(ann,el)
 
 
 cbook.split_partition()
-print "jjjjjjjjjjjjjjjj"
-        
+
+X=np.zeros([(len(image_db)*256*256),len(cbook.set_of_partitions)])
+    
 index_of_partition=[]
-    for i in range(1):
-        img=cv2.resize(image_db[i],(256,256))
-        height,width=img.shape[:2]
-        for x_i in range(0,width):
-            for y_i in range(0,height):
-                pt=[cv2.KeyPoint(x_i,y_i,10)]
-                desc_i=feat_object.compute(img,pt)
-                index_of_partition.append(cbook.find_partition_3(desc_i[1][0]))
-print index_of_partition
-         
+index_of_pixel=0
+for i in range(len(image_db)):
+    img=cv2.resize(image_db[i],(256,256))
+    height,width=img.shape[:2]
+    for x_i in range(0,width):
+        for y_i in range(0,height):
+            print "pixel x,pixel y, image db index",x_i,y_i,i
+            pt=[cv2.KeyPoint(x_i,y_i,10)]
+            desc_i=feat_object.compute(img,pt)
+            index_of_partition.append(cbook_with_mean.find_partition_4(desc_i[1][0]))
+            voted_word=cbook_with_mean.find_partition_4(desc_i[1][0])
+            X[index_of_pixel][voted_word]=1
+            index_of_pixel+=1
+print X
+
+
