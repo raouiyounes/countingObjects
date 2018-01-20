@@ -308,9 +308,17 @@ cbook=CODEBOOK(ann,el)
 # Create the partition as in Arteta et al 
 cbook.split_partition()
 
+
+
+
 X=np.zeros([(len(image_db)*256*256),len(cbook.set_of_partitions)])
     
-    
+
+for i in range(len(cbook.set_of_partitions)):
+    data=cbook.set_of_partitions[i].data
+    cbook.set_of_partitions[i].mean_desc=np.mean(data,axis=0)
+# construct the new object cbook by adding another attribute mean_desc
+cbook_with_mean=cbook 
 # Compute the X matrix   
 index_of_partition=[]
 index_of_pixel=0
