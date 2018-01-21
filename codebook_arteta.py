@@ -5,6 +5,8 @@ import pdb
 from scipy.spatial import distance
 from matplotlib import cbook
 
+
+# create an object partition that has size, data which are descriptors, the coordinates of the pixels and the indexes
 class Partition:
     def __init__(self,elements_dd):
         
@@ -12,16 +14,18 @@ class Partition:
         self.data=elements_dd.desco
         self.pixel_whole=elements_dd.pixel
         self.index_of_all=elements_dd.im_idx
+
+# CReates a codebook object
 class CODEBOOK:
     
-    
+    # creates an instance of a partition
     def create_partition(self,element_p):
         
         p=Partition(element_p)
            
         return p
         
-        
+    # the constructor that receives tha annotatons and the elements
     def __init__(self,annot,elements):
         self.N=16
         self.median=0
@@ -73,7 +77,7 @@ class CODEBOOK:
             median+=descriptors[chosen_index][index_of_max_variance]
         median/=len(self.annot_whole.pixel_whole)
         return median
-
+    # process that verify that the number of the annotations in a partition is higher that N
     def process(self):
         count=0
         for i in range(len(self.set_of_partitions)):
@@ -83,14 +87,17 @@ class CODEBOOK:
             return True
         else:
             return False
-            
+    # removes a partition from the set of partitions when it is divided into two ones
     def remove_partition(self,i):
         del self.set_of_partitions[i]
-        
+    
+    #computes the mean of the descriptor's partition
     def compute_mean_of_desc_parti(self):
         for i in range(len(self.set_of_partitions)):
             desc_of_part=cbook.set_of_partitions[i].data
             self.set_of_partitions[i].mean_desc=np.mean(desc_of_part,axis=0)
+    
+    # this loops overs all the patitions and split them using the algorithm of Arteta et al
 
     def split_partition(self):
         proc=True
@@ -155,6 +162,8 @@ class CODEBOOK:
 # 400 is the threshold
 # data is i*j*index of the image
     
+    # looks for the partition that is the nearest to the descriptor of each pixel of the database
+    
     def find_partition_4(self,desc_i):
         distance_between_descriptors=[0]*len(self.set_of_partitions)
         voted_dim=0
@@ -167,7 +176,7 @@ class CODEBOOK:
                 voted_dim=j
         return voted_dim
         
-    
+""" 
     
     def find_partition_3(self,desc_i):
         #pdb.set_trace()
@@ -228,7 +237,7 @@ class CODEBOOK:
                     min_index_partition=i
         print min_index_partition
         return min_index_partition
-
+"""
 
 class Pixel:
     def __init__(self,x_pix,y_pix):
@@ -236,7 +245,7 @@ class Pixel:
         self.y=y_pix
 
 
-
+# creates an element that contains index of the image of the database, the corresponding pixel and its descriptor
 class Element:
     def __init__(self,im_idx,x,y,descp):
         self.pixel=[]
@@ -247,6 +256,7 @@ class Element:
             self.desco.append(descp[i])
             self.im_idx.append(im_idx[i])
 
+# class of the annotations of created in the entire database 
 class Annot:
     def __init__(self,idx,pixels):
         self.idx_whole=[]
@@ -257,6 +267,7 @@ class Annot:
 
 
 
+# load the database gray_imagesBR.npy 
 image_db=np.load('gray_imagesBR.npy')
 feat_object=cv2.xfeatures2d.SURF_create(400)
 data=np.zeros([256,256,len(image_db)])
@@ -266,6 +277,8 @@ desc=[]
 x=[]
 y=[]
 index=[]
+
+#creates the poses of each pixel and its descriptor
 
 for i in range(3):
     img=cv2.resize(image_db[i],(256,256))
@@ -309,8 +322,6 @@ cbook=CODEBOOK(ann,el)
 cbook.split_partition()
 
 
-
-
 X=np.zeros([(len(image_db)*256*256),len(cbook.set_of_partitions)])
     
 
@@ -336,4 +347,21 @@ for i in range(len(image_db)):
             index_of_pixel+=1
 print X
 
+# size of the image 256*256 in grayscale levels
+# F(p)= x_requete*w
 
+def calcul_x_requete(cbook):
+    x_requete=np.zeros([256*256],len(cbook.set_of_partitions))
+    img=cv2.imread("image_requete.jpg")
+    img=cv2.resize(img,(256,256))
+    height,width=img.shape[:2]
+    index_of_image_pixel_i=0
+    for x_i in range(0,width):
+        for y_i in range(0,height):
+            pt=[cv2.KeyPoint(x_i,y_i,10)]
+            desc_i=feat_object.compute(img,pt)
+            voted_word=cbook_with_mean.find_partition_4(desc_i[1][0])
+            X_requete[index_of_image_pixel_i][voted_word]=1
+            index_of_image_pixel_i+=1
+    return x_requete
+            
